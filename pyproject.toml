@@ -1,0 +1,83 @@
+[project]
+name = "bikeshare"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "matplotlib>=3.10.9",
+    "numpy>=2.4.5",
+    "pandas>=3.0.3",
+    "scikit-learn>=1.8.0",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=2.1.0",
+    "ruff>=0.15.13",
+    "ty>=0.0.37",
+]
+
+[tool.ty.environment]
+python = ".venv"
+
+[tool.mypy]
+plugins = ["sqlalchemy.ext.mypy.plugin","sqlmypy","pydantic.mypy"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+src = ["common/src", "core-api", "optimizer-engine"]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade - modernize syntax
+    "B",     # flake8-bugbear - common bugs
+    "C4",    # flake8-comprehensions
+    "SIM",   # flake8-simplify
+    "RUF",   # ruff-specific rules
+    "TCH",   # flake8-type-checking - move imports into TYPE_CHECKING blocks
+    "ANN",   # flake8-annotations
+    "S",     # flake8-bandit (security)
+    "PTH",   # flake8-use-pathlib
+    "PL",    # pylint
+    "PERF",  # perflint - performance anti-patterns
+    "FURB",  # refurb - modern Python idioms
+    "LOG",   # flake8-logging
+    "G",     # flake8-logging-format
+    "TRY",   # tryceratops - exception handling
+    "EM",    # flake8-errmsg - exception messages
+    "PT",    # flake8-pytest-style
+]
+ignore = [
+    "ANN401",   # Dynamically typed Any - too strict for general use
+    "S101",     # assert - fine in tests and type narrowing
+    "TRY003",   # Long exception messages - overly pedantic
+    "EM101",    # String literal in exception - common pattern
+    "EM102",    # f-string in exception - common pattern
+    "PLR2004",  # Magic value comparison - too noisy
+    "G004",     # Logging with f-string - widely used pattern
+    "RUF002",   # ambiguous unicode character comment - Russian language is permitted in docstrings
+    "RUF003"   # ambiguous unicode character comment - Russian language is permitted in comments
+]
+fixable = ["ALL"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["common", "app"]
+split-on-trailing-comma = true
+force-sort-within-sections = true
+
+[tool.ruff.lint.pylint]
+max-args = 8
+max-branches = 12
+max-returns = 6
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
