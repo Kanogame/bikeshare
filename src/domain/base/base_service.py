@@ -1,0 +1,4 @@
+class BaseService:
+    """
+    Базовый сервис
+    """
