@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime, timedelta
 from typing import Self
 
@@ -14,8 +13,6 @@ from src.domain.forecaster.schemas import (
     TemporalFeatures,
     UpdateBikeReading,
 )
-
-logger = logging.getLogger(__name__)
 
 
 class BikeReadingRepository(
@@ -37,27 +34,9 @@ class BikeReadingRepository(
         rows = await self._fetch_window(since, reading_dt)
 
         if not rows:
-            logger.warning(
-                "No historical readings found before %s — full cold start", reading_dt
-            )
             return TemporalFeatures()
 
         return self._compute_temporal(rows, reading_dt)
-
-    async def get_cold_start_avg(
-        self: Self, hr: int, weekday: int, season: int
-    ) -> float | None:
-        """AVG(cnt) по группе (hr, weekday, season) — fallback для cold start.
-
-        Возвращает среднее log1p(cnt) по исторически похожим наблюдениям.
-        """
-        result = await self.session.execute(
-            sa.select(sa.func.avg(self.model.cnt))
-            .where(sa.extract("hour", self.model.reading_dt) == hr)
-            .where(self.model.weekday == weekday)
-            .where(self.model.season == season)
-        )
-        return result.scalar_one_or_none()
 
     async def _fetch_window(
         self: Self, since: datetime, until: datetime

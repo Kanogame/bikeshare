@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import os
 import uuid
-from datetime import datetime, time
+from datetime import UTC, datetime, time
 from typing import Sequence, Union
 
 import numpy as np
@@ -29,7 +29,7 @@ _TABLE_NAME = "bike_readings"
 
 _bike_readings = sa.table(
     _TABLE_NAME,
-    sa.column("id", sa.String),
+    sa.column("id", sa.UUID(as_uuid=True)),
     sa.column("reading_dt", sa.DateTime),
     sa.column("weekday", sa.Integer),
     sa.column("season", sa.Integer),
@@ -43,19 +43,19 @@ def upgrade() -> None:
     dataset_path = os.environ.get("DATASET_PATH", "datasets/raw.csv")
     df = pd.read_csv(dataset_path, parse_dates=["dteday"])
 
-    now = datetime.utcnow()
+    now = datetime.now(UTC).replace(tzinfo=None)
 
     rows = [
         {
-            "id": str(uuid.uuid4()),
-            "reading_dt": datetime.combine(row["dteday"].date(), time(hour=int(row["hr"]))),
-            "weekday": int(row["weekday"]),
-            "season": int(row["season"]),
-            "cnt": float(np.log1p(row["cnt"])),
+            "id": uuid.uuid4(),
+            "reading_dt": datetime.combine(r["dteday"].date(), time(hour=int(r["hr"]))),
+            "weekday": int(r["weekday"]),
+            "season": int(r["season"]),
+            "cnt": float(np.log1p(r["cnt"])),
             "created_at": now,
             "updated_at": now,
         }
-        for _, row in df.iterrows()
+        for r in df.to_dict("records")
     ]
 
     op.bulk_insert(_bike_readings, rows)

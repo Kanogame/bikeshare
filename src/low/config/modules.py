@@ -12,6 +12,7 @@ class DatabaseConfig(BaseModel):
 
 class ModelConfig(BaseModel):
     path: Path
+    immediate_only: bool
 
 
 class ModulesConfig(BaseModel):

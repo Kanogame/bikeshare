@@ -2,8 +2,6 @@ import logging
 import logging.handlers
 from typing import Self
 
-from transformers.utils.logging import disable_progress_bar
-
 from src.low.config.default_fields import LoggingConfig
 from src.low.exceptions import ServerException
 
@@ -70,9 +68,6 @@ class Logger:
         logging.getLogger("uvicorn").setLevel(logging.INFO)
         logging.getLogger("uvicorn.error").setLevel(logging.INFO)
         logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
-
-        # Отключить полностью tqdm
-        disable_progress_bar()
 
     def create_console_handler(
         self: Self, formatter: logging.Formatter

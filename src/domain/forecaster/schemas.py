@@ -55,14 +55,9 @@ class TemporalFeatures(BaseModel):
     def is_cold(self: Self) -> bool:
         return any(v is None for v in self.model_dump().values())
 
-    def filled_with(self: Self, fallback: float) -> "TemporalFeatures":
-        return self.model_copy(
-            update={k: fallback for k, v in self.model_dump().items() if v is None}
-        )
-
 
 class FeatureVector(BaseModel):
-    """Полный вектор признаков для CatBoost (36 признаков, порядок из train.csv)."""
+    """Полный вектор признаков для CatBoost (34 признака, порядок из train.csv)."""
 
     yr: float
     mnth: float
@@ -76,7 +71,6 @@ class FeatureVector(BaseModel):
     weather_1: float
     weather_2: float
     weather_3: float
-    weather_4: float
     season_1: float
     season_2: float
     season_3: float
@@ -87,7 +81,6 @@ class FeatureVector(BaseModel):
     mnth_cos: float
     is_rush_hour: float
     is_night: float
-    discomfort: float
     cnt_lag_1: float
     cnt_lag_3: float
     cnt_lag_6: float
@@ -100,6 +93,58 @@ class FeatureVector(BaseModel):
     cnt_rolling_std_6: float
     cnt_rolling_std_12: float
     cnt_ewm_6h: float
+
+    @classmethod
+    def from_request(
+        cls, request: PredictionRequest, temporal: TemporalFeatures
+    ) -> "FeatureVector":
+        dteday = request.dteday
+        hr = request.hr
+        mnth = dteday.month
+        # isoweekday(): Mon=1..Sun=7 → dataset: Sun=0..Sat=6
+        weekday = dteday.isoweekday() % 7
+        season = (mnth - 1) // 3 + 1
+        workingday = int(weekday in {1, 2, 3, 4, 5} and request.holiday == 0)
+
+        def _nan(v: float | None) -> float:
+            return v if v is not None else float("nan")
+
+        return cls(
+            yr=float(dteday.year - 2011),
+            mnth=float(mnth),
+            hr=float(hr),
+            holiday=float(request.holiday),
+            weekday=float(weekday),
+            workingday=float(workingday),
+            temp=request.temp,
+            hum=request.hum,
+            windspeed=request.windspeed,
+            weather_1=float(request.weathersit == 1),
+            weather_2=float(request.weathersit == 2),
+            weather_3=float(request.weathersit == 3),
+            season_1=float(season == 1),
+            season_2=float(season == 2),
+            season_3=float(season == 3),
+            season_4=float(season == 4),
+            hr_sin=float(np.sin(2 * np.pi * hr / 24)),
+            hr_cos=float(np.cos(2 * np.pi * hr / 24)),
+            mnth_sin=float(np.sin(2 * np.pi * mnth / 12)),
+            mnth_cos=float(np.cos(2 * np.pi * mnth / 12)),
+            is_rush_hour=float(hr in {7, 8, 9, 17, 18, 19} and workingday == 1),
+            is_night=float(0 <= hr <= 5),
+            cnt_lag_1=_nan(temporal.cnt_lag_1),
+            cnt_lag_3=_nan(temporal.cnt_lag_3),
+            cnt_lag_6=_nan(temporal.cnt_lag_6),
+            cnt_lag_12=_nan(temporal.cnt_lag_12),
+            cnt_lag_24=_nan(temporal.cnt_lag_24),
+            cnt_rolling_mean_3=_nan(temporal.cnt_rolling_mean_3),
+            cnt_rolling_mean_6=_nan(temporal.cnt_rolling_mean_6),
+            cnt_rolling_mean_12=_nan(temporal.cnt_rolling_mean_12),
+            cnt_rolling_mean_24=_nan(temporal.cnt_rolling_mean_24),
+            cnt_rolling_std_6=_nan(temporal.cnt_rolling_std_6),
+            cnt_rolling_std_12=_nan(temporal.cnt_rolling_std_12),
+            cnt_ewm_6h=_nan(temporal.cnt_ewm_6h),
+        )
 
 
 class FilterBikeReading(BaseModel):

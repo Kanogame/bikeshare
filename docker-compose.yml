@@ -1,16 +1,16 @@
 services:
-  mlflow:
-    image: ghcr.io/mlflow/mlflow:v2.18.0
-    container_name: mlflow
+  postgres:
+    image: postgres:latest
+    container_name: bikeshare_pg
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: zeRdojD7
+      POSTGRES_DB: orag_dev
     ports:
-      - "5000:5000"
+      - 5432:5432
     volumes:
-      - ./mlflow/data:/mlflow-data
-    working_dir: /mlflow-data
-    command: >
-      mlflow server
-      --backend-store-uri sqlite:///mlflow.db
-      --default-artifact-root /mlflow-data/artifacts
-      --host 0.0.0.0
-      --port 5000
-    restart: unless-stopped
+      - bikeshare_pg_vol:/var/lib/postgresql
+    restart: always
+
+volumes:
+ bikeshare_pg_vol:

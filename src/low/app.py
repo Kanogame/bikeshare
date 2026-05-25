@@ -53,14 +53,19 @@ class App:
     def _setup_openapi(self: Self) -> None:
         openapi_schema: dict[str, Any] = self.app.openapi()
         openapi_schema["tags"] = [
-            {"name": "Forecasting", "description": "Прогнозирование спроса на велосипеды"},
+            {
+                "name": "Forecasting",
+                "description": "Прогнозирование спроса на велосипеды",
+            },
             {"name": "Service", "description": "Информация о сервисе"},
         ]
         self.app.openapi_schema = openapi_schema
 
     @asynccontextmanager
     async def lifespan(self: Self, app: FastAPI) -> AsyncGenerator[None]:
-        lifespan_logger = logger.register_logger("bikeshare.lifespan", level=logging.INFO)
+        lifespan_logger = logger.register_logger(
+            "bikeshare.lifespan", level=logging.INFO
+        )
 
         await setup_container(self.config.modules, self.creds.modules)
         lifespan_logger.info("DI container initialized")
@@ -72,7 +77,7 @@ class App:
             container.model()
             lifespan_logger.info("CatBoost model loaded successfully")
         except Exception as exc:
-            lifespan_logger.error("Failed to load CatBoost model: %s", exc)
+            lifespan_logger.exception("Failed to load CatBoost model: %s", exc)
             raise
 
         try:
@@ -95,9 +100,7 @@ class App:
         self.app.add_middleware(ErrorHandlingMiddleware)  # type: ignore
 
     def _register_routers(self: Self) -> None:
-        self.app.include_router(
-            api_router, prefix=self.config.general.api_v1_str
-        )
+        self.app.include_router(api_router, prefix=self.config.general.api_v1_str)
 
     def start_uvicorn(self: Self) -> None:
         uvicorn_logger = logger.register_logger("uvicorn")

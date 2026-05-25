@@ -19,7 +19,6 @@ def _load_catboost(path: Path | str) -> CatBoostRegressor:
 
 
 class Container(containers.DeclarativeContainer):
-
     # Слой 1: Инфраструктура
     config: Object[ModulesConfig] = providers.Object(object)  # type: ignore
     creds: Object[ModulesCreds] = providers.Object(object)  # type: ignore
@@ -46,6 +45,7 @@ class Container(containers.DeclarativeContainer):
     # Слой 4: Сервисы
     forecast_service = providers.Factory(
         ForecastService,
+        model_config=config.provided.model,
         model=model,
         bike_reading_repository=bike_reading_repository,
     )
