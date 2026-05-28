@@ -77,7 +77,7 @@ class App:
             container.model()
             lifespan_logger.info("CatBoost model loaded successfully")
         except Exception as exc:
-            lifespan_logger.exception("Failed to load CatBoost model: %s", exc)
+            lifespan_logger.exception("Failed to load CatBoost model: %s", exc)  # noqa: TRY401
             raise
 
         try:

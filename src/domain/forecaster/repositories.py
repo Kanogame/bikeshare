@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Self
 
 import numpy as np
@@ -14,6 +14,9 @@ from src.domain.forecaster.schemas import (
     UpdateBikeReading,
 )
 
+# Lag_24/rolling_24 требуют 24 предыдущие позиции; берём запас на случай гэпов.
+_HISTORY_FETCH_LIMIT = 48
+
 
 class BikeReadingRepository(
     BaseRepository[BikeReading, CreateBikeReading, UpdateBikeReading, FilterBikeReading]
@@ -28,57 +31,63 @@ class BikeReadingRepository(
     ) -> TemporalFeatures:
         """Вычислить temporal признаки для момента reading_dt из исторических записей.
 
-        Fetches записи из окна [reading_dt - 25h, reading_dt), вычисляет lag/rolling/EWM.
+        Берёт последние `_HISTORY_FETCH_LIMIT` строк строго до reading_dt и считает
+        lag/rolling/EWM по позициям (как `Series.shift(k)` в FE) — устойчиво к гэпам.
         """
-        since = reading_dt - timedelta(hours=25)
-        rows = await self._fetch_window(since, reading_dt)
+        rows = await self._fetch_recent(reading_dt, _HISTORY_FETCH_LIMIT)
 
         if not rows:
             return TemporalFeatures()
 
         return self._compute_temporal(rows, reading_dt)
 
-    async def _fetch_window(
-        self: Self, since: datetime, until: datetime
+    async def _fetch_recent(
+        self: Self, before: datetime, limit: int
     ) -> list[BikeReading]:
+        """Последние `limit` строк строго до `before`,
+        возвращаются в хронологическом порядке
+        """
         result = await self.session.execute(
             sa.select(self.model)
-            .where(self.model.reading_dt >= since)
-            .where(self.model.reading_dt < until)
-            .order_by(self.model.reading_dt.asc())
+            .where(self.model.reading_dt < before)
+            .order_by(self.model.reading_dt.desc())
+            .limit(limit)
         )
-        return list(result.scalars().all())
+        return list(reversed(list(result.scalars().all())))
 
     def _compute_temporal(
         self: Self, rows: list[BikeReading], reading_dt: datetime
     ) -> TemporalFeatures:
-        """Вычислить lag/rolling/EWM из упорядоченных исторических записей."""
+        """Вычислить lag/rolling/EWM из упорядоченных исторических записей.
+
+        Лаг и rolling считаются по позициям строк (как `Series.shift(k)` в FE),
+        а не по часам — это даёт паритет с маскированием в notebook 02 на гэпах.
+        """
         series = pd.Series(
             {r.reading_dt: r.cnt for r in rows},
             dtype=float,
         ).sort_index()
+        recent = series[series.index < reading_dt]
 
-        def _lag(hours: int) -> float | None:
-            target = reading_dt - timedelta(hours=hours)
-            if target not in series.index:
+        def _lag(positions: int) -> float | None:
+            if len(recent) < positions:
                 return None
-            val = series[target]
+            val = recent.iloc[-positions]
             return float(val) if not np.isnan(val) else None
 
         def _rolling_mean(window: int) -> float | None:
-            recent = series[series.index < reading_dt].tail(window)
-            if recent.empty:
+            tail = recent.tail(window)
+            if tail.empty:
                 return None
-            return float(recent.mean())
+            return float(tail.mean())
 
         def _rolling_std(window: int) -> float | None:
-            recent = series[series.index < reading_dt].tail(window)
-            if len(recent) < 2:
+            tail = recent.tail(window)
+            if len(tail) < 2:
                 return None
-            return float(recent.std())
+            return float(tail.std())
 
         def _ewm() -> float | None:
-            recent = series[series.index < reading_dt]
             if recent.empty:
                 return None
             return float(recent.ewm(span=6, adjust=False).mean().iloc[-1])

@@ -17,7 +17,7 @@ class FrontendConfig(BaseModel):
 class NetworkingConfig(BaseModel):
     server_host: str
     server_port: int
-    
+
     frontend: FrontendConfig
 
 

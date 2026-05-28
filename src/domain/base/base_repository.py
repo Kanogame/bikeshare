@@ -64,9 +64,7 @@ class BaseRepository[
         будет выброшена ошибка NotFoundExceptio
         n"""
 
-        obj = await self.get_or_none(
-            id, ignore_soft_delete=ignore_soft_delete
-        )
+        obj = await self.get_or_none(id, ignore_soft_delete=ignore_soft_delete)
 
         if obj is None:
             raise NotFoundException(f"{self.model.__name__} not found")

@@ -83,7 +83,9 @@ ignore = [
     "G004",     # Logging with f-string - widely used pattern
     "RUF001",   # ambiguous unicode character comment - Russian language is permitted in strings
     "RUF002",   # ambiguous unicode character comment - Russian language is permitted in docstrings
-    "RUF003"   # ambiguous unicode character comment - Russian language is permitted in comments
+    "RUF003",   # ambiguous unicode character comment - Russian language is permitted in comments
+    "N818",
+    "B008"
 ]
 fixable = ["ALL"]
 

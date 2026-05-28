@@ -5,17 +5,31 @@ import numpy as np
 from pydantic import BaseModel, Field, field_validator
 
 
+def _uci_season(dt: date) -> int:
+    """Сезон по разметке UCI Bike Sharing (астрономические границы)."""
+    moy = (dt.month, dt.day)
+    if (3, 21) <= moy <= (6, 20):
+        return 2
+    if (6, 21) <= moy <= (9, 22):
+        return 3
+    if (9, 23) <= moy <= (12, 20):
+        return 4
+    return 1
+
+
 class PredictionRequest(BaseModel):
     dteday: date = Field(..., description="Дата наблюдения (YYYY-MM-DD)")
     hr: int = Field(..., ge=0, le=23, description="Час дня (0–23)")
     holiday: Literal[0, 1] = Field(..., description="1 если государственный праздник")
     weathersit: Literal[1, 2, 3, 4] = Field(
         ...,
-        description="Погода: 1=ясно, 2=туман, 3=лёгкий дождь/снег, 4=сильный дождь/снег",
+        description="Погода: 1=ясно, 2=туман, 3=лёгкий дождь, 4=снег",
     )
     temp: float = Field(..., ge=0.0, le=1.0, description="Нормализованная температура")
     hum: float = Field(..., ge=0.0, le=1.0, description="Нормализованная влажность")
-    windspeed: float = Field(..., ge=0.0, le=1.0, description="Нормализованная скорость ветра")
+    windspeed: float = Field(
+        ..., ge=0.0, le=1.0, description="Нормализованная скорость ветра"
+    )
 
     @field_validator("dteday")
     @classmethod
@@ -24,7 +38,9 @@ class PredictionRequest(BaseModel):
         dataset_end = date(2012, 12, 31)
         margin = timedelta(days=365)
         if not (dataset_start - margin <= v <= dataset_end + margin):
-            raise ValueError("Дата должна быть в пределах ±1 года от датасета (2011–2012)")
+            raise ValueError(
+                "Дата должна быть в пределах ±1 года от датасета (2011–2012)"
+            )
         return v
 
 
@@ -103,7 +119,7 @@ class FeatureVector(BaseModel):
         mnth = dteday.month
         # isoweekday(): Mon=1..Sun=7 → dataset: Sun=0..Sat=6
         weekday = dteday.isoweekday() % 7
-        season = (mnth - 1) // 3 + 1
+        season = _uci_season(dteday)
         workingday = int(weekday in {1, 2, 3, 4, 5} and request.holiday == 0)
 
         def _nan(v: float | None) -> float:
@@ -121,15 +137,17 @@ class FeatureVector(BaseModel):
             windspeed=request.windspeed,
             weather_1=float(request.weathersit == 1),
             weather_2=float(request.weathersit == 2),
-            weather_3=float(request.weathersit == 3),
+            # weathersit=4 (сильный дождь/снег) объединён с weathersit=3 на этапе FE
+            weather_3=float(request.weathersit in (3, 4)),
             season_1=float(season == 1),
             season_2=float(season == 2),
             season_3=float(season == 3),
             season_4=float(season == 4),
             hr_sin=float(np.sin(2 * np.pi * hr / 24)),
             hr_cos=float(np.cos(2 * np.pi * hr / 24)),
-            mnth_sin=float(np.sin(2 * np.pi * mnth / 12)),
-            mnth_cos=float(np.cos(2 * np.pi * mnth / 12)),
+            # FE использует (mnth - 1) для янв = 0 градусов
+            mnth_sin=float(np.sin(2 * np.pi * (mnth - 1) / 12)),
+            mnth_cos=float(np.cos(2 * np.pi * (mnth - 1) / 12)),
             is_rush_hour=float(hr in {7, 8, 9, 17, 18, 19} and workingday == 1),
             is_night=float(0 <= hr <= 5),
             cnt_lag_1=_nan(temporal.cnt_lag_1),

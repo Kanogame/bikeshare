@@ -8,22 +8,26 @@ Create Date: 2026-05-24 20:37:03.269003
 cnt хранится в log1p-шкале — temporal признаки в сервисе вычисляются в той же шкале.
 Путь к файлу переопределяется через переменную окружения DATASET_PATH.
 """
+
 from __future__ import annotations
 
-import os
-import uuid
 from datetime import UTC, datetime, time
-from typing import Sequence, Union
+import os
+from typing import TYPE_CHECKING
+import uuid
 
+from alembic import op
 import numpy as np
 import pandas as pd
 import sqlalchemy as sa
-from alembic import op
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 revision: str = "7d46af7c7a4c"
-down_revision: Union[str, Sequence[str], None] = "a6b284fed409"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = "a6b284fed409"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 _TABLE_NAME = "bike_readings"
 
