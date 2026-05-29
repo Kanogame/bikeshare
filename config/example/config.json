@@ -23,11 +23,11 @@
     "database": {
       "server": "192.168.1.10",
       "port": 5432,
-      "db_name": "orag_dev",
+      "db_name": "bikeshare_dev",
       "pool_size": 10
     },
     "model": {
-      "path": "./models/catboost.pkl",
+      "path": "./models/catboost_bikeshare.cbm",
       "immediate_only": false
     }
   }
