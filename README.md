@@ -334,8 +334,8 @@ Content-Type: application/json
 
 ```json
 {
-  "predicted_cnt": 348.51,
-  "cold_start":    false
+  "predicted_cnt": 549.4523219043347,
+  "cold_start": false
 }
 ```
 
@@ -378,8 +378,8 @@ Content-Type: application/json
 
 ```json
 {
-  "predicted_cnt": 295.87,
-  "cold_start":    true
+  "predicted_cnt": 615.4374881727707,
+  "cold_start": true
 }
 ```
 
@@ -407,31 +407,22 @@ POST http://127.0.0.1:8000/api/v1/predict
 Ответ в warm-режиме (immediate_only=false):
 
 ```json
-{ "predicted_cnt": 1.83, "cold_start": false }
+{
+  "predicted_cnt": 7.268583331686384,
+  "cold_start": false
+}
 ```
 
 Ответ в cold-режиме (immediate_only=true):
 
 ```json
-{ "predicted_cnt": 2.41, "cold_start": true }
-```
-
-Ночью lag-признаки почти не помогают (спрос стабильно низкий), поэтому разница между режимами маленькая.
-
-### Ошибки
-
-Если запрос не прошёл валидацию pydantic:
-
-```json
-HTTP 400
 {
-  "message": "Input should be less than or equal to 23",
-  "status_code": 400
+  "predicted_cnt": 5.200074807194002,
+  "cold_start": true
 }
 ```
 
-(обработчик `validation_error_handler` в `src/low/app.py`).
-
+Ночью lag-признаки почти не помогают (спрос стабильно низкий), поэтому разница между режимами маленькая.
 
 ## Что такое cold_start подробнее
 

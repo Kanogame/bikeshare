@@ -39,7 +39,7 @@ class PredictionRequest(BaseModel):
         margin = timedelta(days=365)
         if not (dataset_start - margin <= v <= dataset_end + margin):
             raise ValueError(
-                "Дата должна быть в пределах ±1 года от датасета (2011–2012)"
+                "Дата должна быть в пределах +-1 года от датасета (2011–2012)"
             )
         return v
 
